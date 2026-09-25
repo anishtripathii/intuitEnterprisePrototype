@@ -20,14 +20,19 @@ export type TourStep = {
   target: string;
   title: string;
   body: string;
+  tab?: string; // on the developer workspace: the tab that should be open
   waiting?: string; // shown while the screen gets ready
   next?: (h: Helpers) => Promise<void>;
+  // Present once this step's action has happened (the viewer may have clicked it themselves).
+  // Next then just moves on instead of repeating it.
+  done?: string;
 };
 
 export type TrackId = "controller" | "developer";
 export type Track = { id: TrackId; person: string; role: string; pitch: string; start: string; steps: TourStep[] };
 
 const inIssue = (issue: string, target: string) => `[data-issue="${issue}"] [data-tour="${target}"]`;
+const installed = `${inIssue("iss_labor", "proposal")}, ${inIssue("iss_labor", "resolved")}`;
 
 async function install(h: Helpers) {
   await h.click("install-open");
@@ -46,8 +51,9 @@ export const TRACKS: Record<TrackId, Track> = {
       {
         as: "u_priya", path: "/close", target: "start-review",
         title: "Priya hands Footnote one job",
-        body: "Priya is the controller. Leadership reviews project margins on Oct 2, and every number has to be right. Instead of checking everything herself, she gives Footnote one goal.",
+        body: "Priya is the controller. Leadership reviews project margins on Oct 2, and every number has to be right. Instead of checking everything herself, she gives Footnote one goal. Next starts the review.",
         next: (h) => h.click("start-button"),
+        done: 'nav[aria-label="Issues"]',
       },
       {
         as: "u_priya", path: "/close", target: "investigation",
@@ -75,25 +81,28 @@ export const TRACKS: Record<TrackId, Track> = {
         title: "Data in another app? A partner agent helps",
         body: "Luis's answer was applied on its own, because Priya's rule allows it under $10,000. Next problem: Oak Ave's labor cost looks too low. Crew hours live in SiteLog, so Footnote recommends SiteLog's tested agent. Next installs it.",
         next: install,
+        done: installed,
       },
       {
         as: "u_priya", path: "/close", issue: "iss_labor", target: "issue-action",
         title: "The agent proposes, Priya decides",
-        body: "CostCheck found a crew that worked at Oak Ave for three weeks while payroll charged Elm St. It proposes moving $38,400 and shows the approved timesheets as proof. Nothing changes until Priya approves.",
+        body: "CostCheck found a crew that worked at Oak Ave for three weeks while payroll charged Elm St. It proposes moving $38,400 and shows the approved timesheets as proof. Nothing changes until Priya approves. Next approves it.",
         next: async (h) => {
           await h.click(inIssue("iss_labor", "approve"));
           await h.waitFor(inIssue("iss_labor", "resolved"), 20000);
         },
+        done: inIssue("iss_labor", "resolved"),
       },
       {
         as: "u_priya", path: "/close", issue: "iss_rev", target: "issue-action",
         title: "A judgment call? It brings in an accountant",
-        body: "This $220,000 invoice raises a revenue question that needs a professional. Footnote drafts an answer but won't post it. In one click, Priya sends a small case file to her own accountant, Elena.",
+        body: "This $220,000 invoice raises a revenue question that needs a professional. Footnote drafts an answer but won't post it. In one click, Priya sends a small case file to her own accountant, Elena. Next sends it.",
         next: async (h) => {
           await h.click("expert-open");
           await h.click("expert-send");
           await h.waitFor("with-expert", 30000);
         },
+        done: `${inIssue("iss_rev", "with-expert")}, ${inIssue("iss_rev", "approve")}, ${inIssue("iss_rev", "resolved")}`,
       },
       {
         as: "u_elena", path: "/expert/cases/C-1001", target: "case-decision",
@@ -104,11 +113,12 @@ export const TRACKS: Record<TrackId, Track> = {
       {
         as: "u_priya", path: "/close", issue: "iss_rev", target: "issue-action",
         title: "The advice comes back to Priya",
-        body: "Elena changed the draft: record $176,527 now and the rest later. Elena recommends; she doesn't post. Priya approves, and IES records it with Elena's name on it.",
+        body: "Elena changed the draft: record $176,527 now and the rest later. Elena recommends; she doesn't post. Priya approves, and IES records it with Elena's name on it. Next approves it.",
         next: async (h) => {
           await h.click(inIssue("iss_rev", "approve"));
           await h.waitFor(inIssue("iss_rev", "resolved"), 20000);
         },
+        done: inIssue("iss_rev", "resolved"),
       },
       {
         as: "u_priya", path: "/close", target: "readiness",
@@ -130,25 +140,27 @@ export const TRACKS: Record<TrackId, Track> = {
     start: "/developer",
     steps: [
       {
-        as: "u_ravi", path: "/developer", target: "demand",
+        as: "u_ravi", path: "/developer", tab: "Discover", target: "demand",
         title: "Ravi finds a problem worth solving",
-        body: "Ravi runs SiteLog, an app construction crews use to log their time. This board shows problems customers' close agents couldn't solve. 1,241 are about labor that doesn't match the job site, and no agent handles them yet.",
+        body: "Ravi runs SiteLog, an app construction crews use to log their time. This board shows problems customers' close agents couldn't solve. 1,241 are about labor that doesn't match the job site, and no agent handles them yet. Next starts an agent for it.",
         next: async (h) => {
           await h.click("build-agent");
           await h.waitFor("build", 20000);
         },
+        done: "[data-agent]",
       },
       {
-        as: "u_ravi", path: "/developer", target: "build",
+        as: "u_ravi", path: "/developer", tab: "Build", target: "build",
         title: "He builds an agent from a template",
-        body: "The template does the heavy lifting. He sees exactly what the agent may read and sets its price: $6, charged only when a customer accepts a fix. Customers see this same list before installing it.",
+        body: "The template does the heavy lifting. He sees exactly what the agent may read and sets its price: $6, charged only when a customer accepts a fix. Customers see this same list before installing it. Next runs the tests.",
         next: async (h) => {
           await h.click("run-tests");
-          await h.waitFor("test-results", 30000);
+          await h.waitFor('[data-tour="test-results"], [data-tour="test-passed"]', 30000);
         },
+        done: '[data-tour="test-results"], [data-tour="test-passed"], [data-agent="evaluated"], [data-agent="published"]',
       },
       {
-        as: "u_ravi", path: "/developer", target: "test-results",
+        as: "u_ravi", path: "/developer", tab: "Test & publish", target: "test-results",
         title: "It's tested before any customer can use it",
         body: "The Proving Ground runs 24 practice cases. It failed 2: it suggested fixes from timesheets nobody had approved yet. That would mislead a customer. Next, Ravi turns on one setting to skip them and runs the tests again.",
         next: async (h) => {
@@ -157,33 +169,37 @@ export const TRACKS: Record<TrackId, Track> = {
           await h.click("run-tests");
           await h.waitFor("test-passed", 30000);
         },
+        done: '[data-tour="test-passed"], [data-agent="evaluated"], [data-agent="published"]',
       },
       {
-        as: "u_ravi", path: "/developer", target: "test-passed",
+        as: "u_ravi", path: "/developer", tab: "Test & publish", target: "test-passed",
         title: "All 24 cases pass",
-        body: "Passing the tests isn't enough on its own. Intuit also checks security and data access. Then the agent goes live in the IES App Store.",
+        body: "Passing the tests isn't enough on its own. Intuit also checks security and data access. Then the agent goes live in the IES App Store. Next publishes it.",
         next: async (h) => {
           await h.click("publish");
           await h.waitFor("published", 30000);
         },
+        done: '[data-agent="published"]',
       },
       {
         as: "u_priya", path: "/close", issue: "iss_labor", target: "issue-action",
         title: "Customers find it when they need it",
-        body: "At Harbor & Pine, Priya's close agent flagged labor that doesn't match the job site. SiteLog CostCheck is recommended right on that issue. She installs it in one click, and it can only suggest changes.",
+        body: "At Harbor & Pine, Priya's close agent flagged labor that doesn't match the job site. SiteLog CostCheck is recommended right on that issue. She installs it in one click, and it can only suggest changes. Next installs it.",
         next: install,
+        done: installed,
       },
       {
         as: "u_priya", path: "/close", issue: "iss_labor", target: "issue-action",
         title: "The agent proposes a fix, with proof",
-        body: "CostCheck matched 480 approved crew hours to Oak Ave and proposes moving $38,400 from Elm St. Priya approves and IES posts it. SiteLog never touches the books.",
+        body: "CostCheck matched 480 approved crew hours to Oak Ave and proposes moving $38,400 from Elm St. Priya approves and IES posts it. SiteLog never touches the books. Next approves it.",
         next: async (h) => {
           await h.click(inIssue("iss_labor", "approve"));
           await h.waitFor(inIssue("iss_labor", "resolved"), 20000);
         },
+        done: inIssue("iss_labor", "resolved"),
       },
       {
-        as: "u_ravi", path: "/developer", target: "earn",
+        as: "u_ravi", path: "/developer", tab: "Earn", target: "earn",
         title: "Ravi gets paid for results",
         body: "Ravi earns only when a customer accepts a fix: $6 billed, $4.80 to SiteLog. Rejected suggestions cost the customer nothing.",
       },

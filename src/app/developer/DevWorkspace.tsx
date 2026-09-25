@@ -75,7 +75,7 @@ export default function DevWorkspace() {
   };
 
   return (
-    <div className="px-6 lg:px-8 py-6 max-w-[1200px] mx-auto">
+    <div className="px-6 lg:px-8 py-6 max-w-[1200px] mx-auto" data-agent={a?.status}>
       <div className="flex flex-wrap items-center gap-4">
         <span className="w-12 h-12 rounded-xl bg-[#2563EB] text-white font-bold flex items-center justify-center">SL</span>
         <div className="flex-1 min-w-[240px]">
@@ -89,7 +89,7 @@ export default function DevWorkspace() {
 
       <nav className="mt-6 grid grid-cols-4 gap-1 rounded-xl bg-white border border-line p-1" aria-label="Steps">
         {TABS.map((t, i) => (
-          <button key={t} onClick={() => setTab(t)} className={`rounded-lg px-3 py-2.5 text-left flex items-center gap-2 ${tab === t ? "bg-fn text-white" : "hover:bg-canvas"}`}>
+          <button key={t} onClick={() => setTab(t)} data-tab={t} aria-selected={tab === t} className={`rounded-lg px-3 py-2.5 text-left flex items-center gap-2 ${tab === t ? "bg-fn text-white" : "hover:bg-canvas"}`}>
             <span className={`w-6 h-6 rounded-full text-[11px] font-bold flex items-center justify-center shrink-0 ${done[t] ? (tab === t ? "bg-white text-fn" : "bg-good-soft text-good") : tab === t ? "bg-white/20" : "bg-line-2 text-ink-3"}`}>{done[t] ? <Icon.Check size={12} /> : i + 1}</span>
             <span className="text-[14px] font-semibold">{t}</span>
           </button>

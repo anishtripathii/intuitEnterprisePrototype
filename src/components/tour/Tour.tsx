@@ -103,11 +103,17 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       try {
+        if (step.tab) {
+          const tab = await waitFor(`[data-tab="${step.tab}"]`, 30000, () => alive);
+          if (tab.getAttribute("aria-selected") !== "true") tab.click();
+        }
         if (step.issue) {
           const item = await waitFor(`[data-issue-id="${step.issue}"]`, 30000, () => alive);
           if (item.getAttribute("aria-current") !== "true") item.click();
         }
-        const el = await waitFor(stepSelector(step), 40000, () => alive);
+        // If the viewer is already past this step, what it points at may never appear: don't wait long.
+        const ahead = !!(step.done && document.querySelector(step.done));
+        const el = await waitFor(stepSelector(step), ahead ? 1500 : 40000, () => alive);
         if (!alive) return;
         const tall = el.getBoundingClientRect().height > window.innerHeight * 0.6;
         el.scrollIntoView({ block: tall ? "start" : "center", behavior: "smooth" });
@@ -166,12 +172,18 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   async function next() {
     if (!active || !step) return;
     setBusy(true);
-    try {
-      await step.next?.(helpers);
-    } catch {
-      toast("That step didn't finish. Click Next to try again.", "bad");
-      setBusy(false);
-      return;
+    // If the viewer already did this step's action themselves, don't repeat it.
+    const done = () => !!(step.done && document.querySelector(step.done));
+    if (!done()) {
+      try {
+        await step.next?.(helpers);
+      } catch {
+        if (!done()) {
+          toast("That step didn't finish. Click Next to try again.", "bad");
+          setBusy(false);
+          return;
+        }
+      }
     }
     const n = active.step + 1;
     const steps = TRACKS[active.track].steps;
@@ -280,7 +292,7 @@ function Chooser({ onClose, onStart, starting }: { onClose: () => void; onStart:
   return (
     <Modal title="See how Footnote helps" eyebrow={<span className="flex items-center gap-1.5 text-[12px] font-semibold text-fn"><FootnoteLogo size={13} /> Footnote demo</span>} onClose={onClose} width={640}>
       <div className="flex flex-col gap-4">
-        <p className="text-[14px] text-ink-2">Pick whose side to see. A short guide walks you through it, one screen at a time. Click Next to move on, or Cancel to stop at any point.</p>
+        <p className="text-[14px] text-ink-2">Pick whose side to see. A short guide walks you through it, one screen at a time. Click Next to do each step and move on (or click the highlighted button yourself), and Cancel to stop at any point.</p>
         <div className="grid sm:grid-cols-2 gap-3">
           {(Object.values(TRACKS)).map((t) => (
             <button key={t.id} disabled={!!starting} onClick={() => onStart(t.id)} className="text-left rounded-xl border border-line p-4 hover:border-fn hover:bg-fn-soft/40 flex flex-col gap-2 disabled:opacity-60">
