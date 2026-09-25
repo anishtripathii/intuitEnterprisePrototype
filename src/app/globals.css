@@ -1,26 +1,225 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-qb: #2ca01c;
+  --color-qb-dark: #108000;
+  --color-qb-soft: #e8f5e5;
+  --color-ink: #2b2d33;
+  --color-ink-2: #5f636d;
+  --color-ink-3: #8a8e98;
+  --color-line: #dfe2e7;
+  --color-line-2: #eef0f3;
+  --color-canvas: #f5f6f8;
+  --color-nav: #f3f4f6;
+  --color-link: #0b6bcb;
+  --color-intuit: #236cff;
+  --color-fn: #4f46e5;
+  --color-fn-dark: #3730a3;
+  --color-fn-soft: #eef0ff;
+  --color-warn: #a75a06;
+  --color-warn-soft: #fdf3e3;
+  --color-bad: #c0352b;
+  --color-bad-soft: #fcecea;
+  --color-good: #177a37;
+  --color-good-soft: #e6f5ea;
+  --color-expert: #0f766e;
+  --color-expert-soft: #e3f4f1;
+  --font-sans: "Avenir Next", Avenir, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+html,
+body {
+  background: #ffffff;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Component and form styles live in a layer so Tailwind utilities can override them. */
+@layer components {
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    border: 1px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
+  }
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .btn-primary {
+    background: var(--color-qb);
+    color: #fff;
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--color-qb-dark);
+  }
+  .btn-secondary {
+    background: #fff;
+    color: var(--color-ink);
+    border-color: #b9bdc5;
+  }
+  .btn-secondary:hover:not(:disabled) {
+    background: var(--color-canvas);
+    border-color: #8a8e98;
+  }
+  .btn-fn {
+    background: var(--color-fn);
+    color: #fff;
+  }
+  .btn-fn:hover:not(:disabled) {
+    background: var(--color-fn-dark);
+  }
+  .btn-danger {
+    background: #fff;
+    color: var(--color-bad);
+    border-color: #e6b3ae;
+  }
+  .btn-danger:hover:not(:disabled) {
+    background: var(--color-bad-soft);
+  }
+  .btn-link {
+    background: transparent;
+    color: var(--color-link);
+    padding: 0 4px;
+    height: auto;
+  }
+  .btn-link:hover:not(:disabled) {
+    text-decoration: underline;
+  }
+  .btn-sm {
+    height: 30px;
+    padding: 0 12px;
+    font-size: 13px;
+  }
+  .card {
+    background: #fff;
+    border: 1px solid var(--color-line);
+    border-radius: 10px;
+  }
+  .label {
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-ink-3);
+  }
+  .tbl {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .tbl th {
+    text-align: left;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-ink-3);
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--color-line);
+    white-space: nowrap;
+  }
+  .tbl td {
+    padding: 11px 12px;
+    border-bottom: 1px solid var(--color-line-2);
+    vertical-align: middle;
+    font-size: 14px;
+  }
+  .tbl tr.row-click {
+    cursor: pointer;
+  }
+  .tbl tr.row-click:hover td {
+    background: #f7f8fb;
+  }
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  textarea,
+  select {
+    border: 1px solid #b9bdc5;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 14px;
+    background: #fff;
+    color: var(--color-ink);
+  }
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible,
+  button:focus-visible,
+  a:focus-visible {
+    outline: 2px solid var(--color-link);
+    outline-offset: 2px;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@keyframes fn-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.fn-in {
+  animation: fn-in 0.35s ease-out both;
+}
+@keyframes fn-flash {
+  0% {
+    background: #eef0ff;
+  }
+  100% {
+    background: transparent;
+  }
+}
+.fn-flash {
+  animation: fn-flash 2.2s ease-out;
+}
+@keyframes fn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.fn-spin {
+  animation: fn-spin 0.9s linear infinite;
+}
+@keyframes fn-slide {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+.fn-slide {
+  animation: fn-slide 0.22s ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .fn-in,
+  .fn-flash,
+  .fn-slide {
+    animation: none;
+  }
+  .fn-spin {
+    animation-duration: 3s;
+  }
 }
