@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { currentUser, type User } from "./auth";
+import { withWs } from "./db";
 
 export function json(data: unknown, status = 200) {
   return NextResponse.json(data, { status });
@@ -16,4 +17,14 @@ export function isResponse(x: unknown): x is NextResponse {
   return x instanceof NextResponse;
 }
 
-export const FINANCE_ROLES = ["controller", "cfo", "bookkeeper", "entity_accountant"];
+// Runs a route handler inside the visitor's demo workspace (one transaction per request).
+export function handler<C>(fn: (req: Request, ctx: C) => Promise<Response>) {
+  return async (req: Request, ctx: C): Promise<Response> => {
+    try {
+      return await withWs(() => fn(req, ctx));
+    } catch (e) {
+      console.error("[api]", e);
+      return json({ error: "Something went wrong on the server. Try again." }, 500);
+    }
+  };
+}

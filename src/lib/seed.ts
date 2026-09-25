@@ -1,35 +1,26 @@
-import type Database from "better-sqlite3";
-import fs from "node:fs";
-import path from "node:path";
+import type postgres from "postgres";
 import { hashPassword } from "./hash";
 import { DEMO_ANCHOR } from "./clock";
+import { RECEIPTS, receiptFile } from "./files";
 
 type Row = Record<string, unknown>;
 
-function receiptSvg(vendor: string, date: string, total: string, lines: [string, string][], footer: string) {
-  const rows = lines.map(([a, b], i) => `<text x="22" y="${146 + i * 22}" font-size="12">${a}</text><text x="278" y="${146 + i * 22}" font-size="12" text-anchor="end">${b}</text>`).join("");
-  const y = 160 + lines.length * 22;
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="420" viewBox="0 0 300 420"><rect width="300" height="420" fill="#fbfaf6"/><g font-family="Courier New, monospace" fill="#222"><text x="150" y="44" font-size="17" text-anchor="middle" font-weight="bold">${vendor}</text><text x="150" y="66" font-size="11" text-anchor="middle">SALES RECEIPT</text><text x="150" y="86" font-size="11" text-anchor="middle">${date}</text><line x1="18" y1="110" x2="282" y2="110" stroke="#999" stroke-dasharray="4 3"/>${rows}<line x1="18" y1="${y}" x2="282" y2="${y}" stroke="#999" stroke-dasharray="4 3"/><text x="22" y="${y + 26}" font-size="14" font-weight="bold">TOTAL</text><text x="278" y="${y + 26}" font-size="14" font-weight="bold" text-anchor="end">${total}</text><text x="150" y="380" font-size="10" text-anchor="middle">${footer}</text></g></svg>`;
-}
-
-export function seed(d: Database.Database) {
+// Seeds one visitor's demo copy. Rows are collected per table and inserted in one statement each.
+export async function seed(tx: postgres.TransactionSql<Record<string, never>>) {
   const ago = (mins: number) => new Date(DEMO_ANCHOR - mins * 60000).toISOString();
-  const ins = (table: string, row: Row) => {
-    const keys = Object.keys(row);
-    d.prepare(`insert into ${table} (${keys.join(",")}) values (${keys.map((k) => "@" + k).join(",")})`).run(row);
-  };
-  const uploads = path.join(process.cwd(), "data", "uploads");
-  fs.mkdirSync(uploads, { recursive: true });
+  const tables = new Map<string, Row[]>();
+  const ins = (table: string, row: Row) => tables.set(table, [...(tables.get(table) ?? []), row]);
   const pw = hashPassword("demo1234");
+  let userSort = 0;
 
-  d.transaction(() => {
+  {
     ins("companies", { id: "hpg", name: "Harbor & Pine Group", short: "Group", parent_id: null });
     ins("companies", { id: "hpb", name: "Harbor & Pine Builders", short: "Builders", parent_id: "hpg" });
     ins("companies", { id: "prs", name: "Pine Ridge Services", short: "Pine Ridge", parent_id: "hpg" });
 
     const U = (id: string, name: string, email: string, role: string, title: string, color: string, extra: Row = {}) =>
       ins("users", {
-        id, name, email, password_hash: pw, role, title, phone: null, firm: null, color,
+        id, sort: ++userSort, name, email, password_hash: pw, role, title, phone: null, firm: null, color,
         initials: name.replace(/,.*$/, "").split(" ").map((s) => s[0]).join("").slice(0, 2).toUpperCase(), ...extra,
       });
     U("u_priya", "Priya Shah", "priya@harborpine.demo", "controller", "Controller · Harbor & Pine Group", "#0B6BCB");
@@ -122,18 +113,9 @@ export function seed(d: Database.Database) {
     T("t_amz", "2026-09-24", "AMZN MKTP US*2K4 · Amzn.com/bill", "v_amz", 1284.6, "a6300", null, "card", "••2087", { card_id: "c2087", memo: "AI suggested Office Supplies (48% sure)" });
 
     // Receipts inbox (forwarded by email / snapped in the QuickBooks app), not yet matched
-    const R = (id: string, vendor: string, amount: number, date: string, jobRef: string | null, lines: [string, string][], footer: string) => {
-      const file = `receipt-${id}.svg`;
-      fs.writeFileSync(path.join(uploads, file), receiptSvg(vendor.toUpperCase(), date, `$${amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, lines, footer));
-      ins("receipts", { id, vendor, amount, date, file, job_ref: jobRef, matched_txn_id: null, received_via: "Forwarded to receipts@harborpine.demo" });
-    };
-    R("r_gr", "Grainger", 2315, "2026-09-27", "PO OAK-114", [["SAFETY HARNESS X4", "$1,120.00"], ["ANCHOR KIT", "$1,195.00"]], "SHIP TO: 1840 OAK AVE · PO OAK-114");
-    R("r_sw", "Sherwin-Williams", 1940, "2026-09-27", "ELM ST", [["PRIMER 5GAL X6", "$1,140.00"], ["PAINT 5GAL X4", "$800.00"]], "JOB: ELM ST MEDICAL");
-    R("r_cat", "CAT Rental Store", 2860, "2026-09-27", "ELM ST", [["MINI EXCAVATOR 3 DAY", "$2,520.00"], ["DELIVERY", "$340.00"]], "JOBSITE: 410 ELM ST");
-    R("r_hd61", "Home Depot", 6150, "2026-09-26", "RIVERSIDE", [["LUMBER 2X6 PT", "$3,980.00"], ["CONCRETE MIX 80LB", "$2,170.00"]], "PRO DESK · RIVERSIDE WHSE");
-    R("r_wc", "White Cap", 1250, "2026-09-26", null, [["REBAR TIE WIRE", "$410.00"], ["FORM STAKES", "$840.00"]], "WILL CALL");
-    R("r_fa", "Fastenal", 760, "2026-09-28", null, [["ANCHOR BOLTS", "$520.00"], ["WASHERS", "$240.00"]], "COUNTER SALE");
-    R("r_hd84", "Home Depot", 8400, "2026-09-28", null, [["DRYWALL 5/8 X120", "$4,860.00"], ["METAL STUDS X200", "$2,380.00"], ["SCREWS / MUD", "$1,160.00"]], "PAID · MASTERCARD ••4411 · NO JOB NAME");
+    for (const r of RECEIPTS) {
+      ins("receipts", { id: r.id, vendor: r.vendor, amount: r.amount, date: r.date, file: receiptFile(r.id), job_ref: r.jobRef, matched_txn_id: null, received_via: "Forwarded to receipts@harborpine.demo" });
+    }
 
     // Payroll allocation detail (PR-0930). Framing crew B defaults to Elm St in payroll.
     const L = (worker: string, crew: string, project: string, hours: number) => ins("labor_alloc", { worker, crew, project_id: project, hours, amount: hours * 80, ref: "PR-0930" });
@@ -171,12 +153,13 @@ export function seed(d: Database.Database) {
     S("payroll_posted_at", "2026-09-30T23:10:00.000Z");
     S("sitelog_logs_at", ago(14 * 60));
     S("review_date", "2026-10-02");
-  })();
+  }
 
-  fs.writeFileSync(
-    path.join(uploads, "contract-lsd-2026-17.svg"),
-    `<svg xmlns="http://www.w3.org/2000/svg" width="340" height="440" viewBox="0 0 340 440"><rect width="340" height="440" fill="#fff" stroke="#ccc"/><g font-family="Helvetica, Arial" fill="#333"><text x="24" y="44" font-size="16" font-weight="bold">Contract LSD-2026-17</text>${[
-      "Lincoln School District × Harbor & Pine Builders", "Gymnasium construction · $1,460,000", "Billing: 5 milestones (not % complete)", "M1 Foundation complete · $220,000", "M2 Structure topped out · $365,000", "M3 Enclosed · $292,000", "M4 Interiors · $365,000", "M5 Substantial completion · $218,000", "Owner's rep accepts each milestone", "Retainage: 5%",
-    ].map((l, i) => `<text x="24" y="${84 + i * 26}" font-size="12">${l}</text>`).join("")}</g></svg>`,
-  );
+  for (const [table, rows] of tables) {
+    const cols = [...new Set(rows.flatMap((r) => Object.keys(r)))];
+    await tx.unsafe(
+      `insert into ${table} (${cols.join(",")}) values ${rows.map((_, i) => `(${cols.map((__, j) => `$${i * cols.length + j + 1}`).join(",")})`).join(",")}`,
+      rows.flatMap((r) => cols.map((c) => (r[c] === undefined ? null : r[c]))) as never[],
+    );
+  }
 }

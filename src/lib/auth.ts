@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { db, nowIso } from "./db";
+import { nowIso, one, run } from "./db";
 import { randomToken } from "./hash";
 
 export type User = {
@@ -20,15 +20,13 @@ export async function currentUser(): Promise<User | null> {
   const c = await cookies();
   const t = c.get(SESSION)?.value;
   if (!t) return null;
-  const u = db()
-    .prepare("select u.id,u.name,u.email,u.role,u.title,u.phone,u.firm,u.initials,u.color from sessions s join users u on u.id=s.user_id where s.token=?")
-    .get(t) as User | undefined;
+  const u = await one<User>("select u.id,u.name,u.email,u.role,u.title,u.phone,u.firm,u.initials,u.color from sessions s join users u on u.id=s.user_id where s.token=?", t);
   return u ?? null;
 }
 
 export async function createSession(userId: string) {
   const t = randomToken();
-  db().prepare("insert into sessions(token,user_id,created_at) values(?,?,?)").run(t, userId, nowIso());
+  await run("insert into sessions(token,user_id,created_at) values(?,?,?)", t, userId, nowIso());
   const c = await cookies();
   c.set(SESSION, t, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 14 });
 }
@@ -36,7 +34,7 @@ export async function createSession(userId: string) {
 export async function destroySession() {
   const c = await cookies();
   const t = c.get(SESSION)?.value;
-  if (t) db().prepare("delete from sessions where token=?").run(t);
+  if (t) await run("delete from sessions where token=?", t);
   c.delete(SESSION);
 }
 

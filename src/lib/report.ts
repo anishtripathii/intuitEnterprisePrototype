@@ -10,11 +10,11 @@ function pct(n: number | null) {
 }
 
 // Why each project's margin moved, from the resolved issues and who acted on them.
-function reasons(issues: IssueRow[]): Reason[] {
+async function reasons(issues: IssueRow[]): Promise<Reason[]> {
   const out: Reason[] = [];
   for (const i of issues.filter((x) => x.status === "resolved" && x.proposal)) {
     const p = JSON.parse(i.proposal!) as Proposal;
-    const acts = all<ActivityRow>("select * from activity where issue_id=? order by id", i.id);
+    const acts = await all<ActivityRow>("select * from activity where issue_id=? order by id", i.id);
     if (i.kind === "missing_project" && p.type === "tag" && p.projectId) {
       const who = acts.find((a) => a.kind === "answered")?.actor_name ?? acts.find((a) => a.kind === "approved")?.actor_name ?? "";
       out.push({ projectId: p.projectId, delta: -i.amount, who, issueId: i.id, text: `${money(i.amount, { cents: false })} of Home Depot materials added${who ? ` (${who} confirmed the job)` : ""}` });
@@ -27,7 +27,7 @@ function reasons(issues: IssueRow[]): Reason[] {
       }
     }
     if (i.kind === "revenue" && i.case_id) {
-      const c = one<{ recommendation: string | null; expert_id: string }>("select recommendation, expert_id from cases where id=?", i.case_id);
+      const c = await one<{ recommendation: string | null; expert_id: string }>("select recommendation, expert_id from cases where id=?", i.case_id);
       const r = c?.recommendation ? (JSON.parse(c.recommendation) as Extract<Proposal, { type: "revenue" }>) : null;
       const approver = acts.find((a) => a.kind === "approved")?.actor_name ?? "";
       if (r && r.adjustment) out.push({ projectId: "p_lin", delta: r.adjustment, who: r.by, issueId: i.id, text: `revenue measured by cost incurred, so ${money(Math.abs(r.adjustment), { cents: false })} is deferred (${r.by.split(",")[0]} recommended, ${approver} approved)` });
@@ -38,13 +38,13 @@ function reasons(issues: IssueRow[]): Reason[] {
 }
 
 export async function reportData() {
-  const runRow = one<{ id: string; baseline: string; started_at: string }>("select id, baseline, started_at from runs order by started_at desc limit 1");
-  const now = projectMargins();
+  const runRow = await one<{ id: string; baseline: string; started_at: string }>("select id, baseline, started_at from runs order by started_at desc limit 1");
+  const now = await projectMargins();
   const before: Margins | null = runRow ? (JSON.parse(runRow.baseline) as Margins) : null;
-  const issues = runRow ? all<IssueRow>("select * from issues where run_id=?", runRow.id) : [];
-  const why = reasons(issues);
-  const r = readiness();
-  const L = lookups();
+  const issues = runRow ? await all<IssueRow>("select * from issues where run_id=?", runRow.id) : [];
+  const why = await reasons(issues);
+  const r = await readiness();
+  const L = await lookups();
   const open = issues
     .filter((i) => !RESOLVED.includes(i.status))
     .map((i) => ({ id: i.id, title: i.title, amount: i.amount, status: i.status, material: !["minor", "receipts"].includes(i.kind) && i.amount >= r.materiality, projects: JSON.parse(i.projects) as string[] }));
@@ -76,11 +76,11 @@ export async function reportData() {
     ? await explainMargins(key, { projects: rows.map((x) => ({ name: x.name, marginBefore: pct(x.before?.pct ?? null), marginNow: pct(x.pct), revenue: x.revenue, cost: x.cost, changes: x.reasons.map((w) => w.text) })), directLabor: now.totals.labor, stillOpen: open.map((o) => o.title) }, fallback)
     : { text: fallback, ai: false };
 
-  const history = all<ActivityRow & { issue_title: string | null }>(
+  const history = await all<ActivityRow & { issue_title: string | null }>(
     "select a.*, i.title issue_title from activity a left join issues i on i.id=a.issue_id where a.kind in ('applied','approved','posted','answered','proposed','returned','sent_to_expert','installed','info_received','rejected','undone') order by a.id desc",
   );
-  const txns = (projectId: string) => {
-    const list = all<Txn & { receipt: string | null }>("select t.*, r.file receipt from transactions t left join receipts r on r.matched_txn_id=t.id where t.project_id=? and t.status='posted' and t.account_id in ('a4000','a5000','a5100','a5200','a5300') order by t.account_id, t.amount desc", projectId);
+  const txns = async (projectId: string) => {
+    const list = await all<Txn & { receipt: string | null }>("select t.*, r.file receipt from transactions t left join receipts r on r.matched_txn_id=t.id where t.project_id=? and t.status='posted' and t.account_id in ('a4000','a5000','a5100','a5200','a5300') order by t.account_id, t.amount desc", projectId);
     return list.map((t) => ({ id: t.id, date: t.date, description: t.description, amount: t.amount, account: L.accounts.get(t.account_id)?.name ?? "", source: t.source, receipt: t.receipt }));
   };
 
@@ -94,7 +94,7 @@ export async function reportData() {
     readiness: r,
     note,
     history: history.slice(0, 40),
-    projectTxns: Object.fromEntries(now.rows.map((x) => [x.projectId, txns(x.projectId)])),
+    projectTxns: Object.fromEntries(await Promise.all(now.rows.map(async (x) => [x.projectId, await txns(x.projectId)] as const))),
   };
 }
 export type ReportData = Awaited<ReturnType<typeof reportData>>;
