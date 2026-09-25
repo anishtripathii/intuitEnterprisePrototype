@@ -336,7 +336,7 @@ function Chooser({ onClose, onStart, starting }: { onClose: () => void; onStart:
             </button>
           ))}
         </div>
-        <p className="text-[12.5px] text-ink-3">The demo starts from a fresh copy of the sample data.</p>
+        <p className="text-[12.5px] text-ink-3">The demo starts from a fresh copy of the sample data. To start over without a demo, <a href="/reset" className="text-link hover:underline">reset everything</a>.</p>
       </div>
     </Modal>
   );
