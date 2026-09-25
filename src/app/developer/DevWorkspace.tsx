@@ -87,9 +87,9 @@ export default function DevWorkspace() {
         </div>
       </div>
 
-      <nav className="mt-6 grid grid-cols-4 gap-1 rounded-xl bg-white border border-line p-1" aria-label="Steps">
+      <nav className="mt-6 grid grid-cols-4 gap-1 rounded-xl bg-white border border-line p-1" aria-label="Steps" role="tablist">
         {TABS.map((t, i) => (
-          <button key={t} onClick={() => setTab(t)} data-tab={t} aria-selected={tab === t} className={`rounded-lg px-3 py-2.5 text-left flex items-center gap-2 ${tab === t ? "bg-fn text-white" : "hover:bg-canvas"}`}>
+          <button key={t} onClick={() => setTab(t)} data-tab={t} role="tab" aria-selected={tab === t} className={`rounded-lg px-3 py-2.5 text-left flex items-center gap-2 ${tab === t ? "bg-fn text-white" : "hover:bg-canvas"}`}>
             <span className={`w-6 h-6 rounded-full text-[11px] font-bold flex items-center justify-center shrink-0 ${done[t] ? (tab === t ? "bg-white text-fn" : "bg-good-soft text-good") : tab === t ? "bg-white/20" : "bg-line-2 text-ink-3"}`}>{done[t] ? <Icon.Check size={12} /> : i + 1}</span>
             <span className="text-[14px] font-semibold">{t}</span>
           </button>
