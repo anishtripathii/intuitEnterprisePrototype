@@ -8,14 +8,27 @@ A working prototype for the Intuit PM case, built inside an Intuit Enterprise Su
 - **Expert (Elena):** gets a scoped case. She can ask for information, change the draft treatment, and return a recommendation. Priya approves and IES posts.
 - **Developer (Ravi, SiteLog):** finds demand, builds a specialist agent, passes the Proving Ground (24 real test cases), clears a separate security review, publishes, and earns per accepted result.
 
-## Run it
+**Live:** https://intuit-enterprise-prototype.vercel.app
+
+All demo accounts use the password `demo1234`, and the sign-in page has one-click people. **Demo guide** (top bar, every screen) jumps to each step and can reset the data. Every visitor gets their own private copy of the demo, so reviewers never see each other's progress.
+
+## Run it locally
 
 ```bash
 npm install
-npm run dev        # http://localhost:3100
+npx vercel env pull .env.local   # Supabase connection settings from the Vercel project
+npm run dev                      # http://localhost:3100
 ```
 
-The SQLite database (`data/footnote-v2.db`) is created and seeded on first run. All demo accounts use the password `demo1234`, and the sign-in page has one-click people. **Demo guide** (top bar, every screen) jumps to each step and can reset the data.
+## How it's deployed
+
+- **Vercel** hosts the Next.js app (functions pinned to `iad1`, see `vercel.json`).
+- **Supabase Postgres** (us-east-1, added through Vercel's Supabase integration) stores the data. The app connects through the transaction pooler (`POSTGRES_URL`).
+- Each visitor gets a Postgres schema `ws_<id>` (from the `fn_ws` cookie set in `src/middleware.ts`), created and seeded on first request. Requests run in one transaction scoped to that schema. **Reset demo data** drops it and starts a new one; copies older than 14 days are removed automatically.
+- The per-visitor schemas aren't exposed through Supabase's public Data API, and the registry table has row-level security on, so only the app can read the data.
+- Receipts and the contract are generated on request (`src/lib/files.ts`); nothing is written to disk.
+
+Deploy a new version with `npx vercel deploy --prod`.
 
 ## The 12-minute story
 
@@ -48,4 +61,4 @@ Calls use `claude-opus-5` with server-side fallbacks enabled, and fall back to t
 
 ## Stack
 
-Next.js 15 (App Router) · Tailwind v4 · better-sqlite3 · cookie sessions (scrypt-hashed passwords) · Anthropic TypeScript SDK. The app's clock is fixed to Oct 1, 2026 (day 1 of the September close), and dates show in Pacific time.
+Next.js 15 (App Router) · Tailwind v4 · Supabase Postgres (postgres.js) · cookie sessions (scrypt-hashed passwords) · Anthropic TypeScript SDK. The app's clock is fixed to Oct 1, 2026 (day 1 of the September close), and dates show in Pacific time.
