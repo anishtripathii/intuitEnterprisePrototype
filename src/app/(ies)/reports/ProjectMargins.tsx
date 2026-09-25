@@ -47,7 +47,7 @@ export default function ProjectMargins() {
         <p className="text-[15px] leading-relaxed mt-2 max-w-[95ch]">{data.note.text}</p>
       </section>
 
-      <section className="card mt-5 overflow-hidden">
+      <section className="card mt-5 overflow-hidden" data-tour="report">
         <div className="overflow-x-auto">
           <table className="tbl">
             <thead>

@@ -223,3 +223,14 @@ body {
     animation-duration: 3s;
   }
 }
+
+/* During the guided demo, confirmations sit top-right, clear of the demo's buttons. */
+body[data-tour="on"] .toast-stack {
+  top: 64px;
+  bottom: auto;
+  left: auto;
+  right: 20px;
+  translate: none;
+  transform: none;
+  align-items: flex-end;
+}

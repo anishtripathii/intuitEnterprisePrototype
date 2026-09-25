@@ -22,6 +22,14 @@ export default function Phone({ userId }: { userId: string }) {
   }, [count]);
 
   const first = data?.user.name.split(" ")[0] ?? "";
+  // The status-bar clock shows the demo's time, so it's rendered in the browser only.
+  const [clock, setClock] = useState<string | null>(null);
+  useEffect(() => {
+    const tick = () => setClock(clockTime(demoNow()));
+    tick();
+    const id = setInterval(tick, 20000);
+    return () => clearInterval(id);
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#e8eaef] flex flex-col">
@@ -34,11 +42,11 @@ export default function Phone({ userId }: { userId: string }) {
           <p className="text-[13px] text-ink-3 mt-3">Tap the link in the newest message.</p>
           <button onClick={() => history.back()} className="btn btn-secondary btn-sm mt-5"><Icon.ArrowLeft size={14} /> Back</button>
         </div>
-        <div className="relative w-[375px] max-w-full h-[760px] rounded-[52px] bg-[#0f1115] p-3 shadow-2xl shrink-0">
+        <div className="relative w-[375px] max-w-full h-[760px] rounded-[52px] bg-[#0f1115] p-3 shadow-2xl shrink-0" data-tour="phone">
           <div className="absolute top-3 left-1/2 -translate-x-1/2 w-[118px] h-[28px] bg-[#0f1115] rounded-b-[18px] z-10" />
           <div className="w-full h-full rounded-[42px] bg-white overflow-hidden flex flex-col">
             <div className="h-11 flex items-end justify-between px-8 pb-1.5 text-[13px] font-semibold shrink-0">
-              <span suppressHydrationWarning>{clockTime(demoNow())}</span>
+              <span>{clock}</span>
               <span className="w-6 h-3 rounded-[3px] border border-ink relative"><span className="absolute inset-[1.5px] right-[5px] bg-ink rounded-[1px]" /></span>
             </div>
             {link ? (
@@ -72,7 +80,7 @@ export default function Phone({ userId }: { userId: string }) {
                           ) : null}
                         </div>
                         {m.q_status === "answered" ? (
-                          <div className="self-end mt-1.5 rounded-[18px] rounded-br-md bg-[#0a84ff] text-white px-3.5 py-2 text-[14.5px]">✓ {m.answer_label}</div>
+                          <div className="self-end mt-1.5 rounded-[18px] rounded-br-md bg-[#0a84ff] text-white px-3.5 py-2 text-[14.5px]" data-tour="phone-answered">✓ {m.answer_label}</div>
                         ) : m.q_status === "rerouted" ? (
                           <div className="self-end mt-1.5 rounded-[18px] rounded-br-md bg-[#0a84ff] text-white px-3.5 py-2 text-[14.5px]">Not mine · passed on</div>
                         ) : null}

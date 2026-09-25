@@ -21,7 +21,7 @@ const WAITING: Record<string, string> = {
   expert_returned: "recommendation ready",
 };
 
-// Replaces v1's "% final": what blocks the review, how fresh each source is, and what's been approved.
+// Replaces v1's "% final": whether the review can go ahead, what blocks it, and how fresh each source is.
 export default function Readiness({ r, onSelect, linkBase }: { r: ReadinessData; onSelect?: (id: string) => void; linkBase?: string }) {
   const tone = !r.reviewed ? "text-ink-2" : r.ready ? "text-good" : "text-warn";
   const Item = ({ b }: { b: ReadinessData["blockers"][number] }) => {
@@ -38,7 +38,7 @@ export default function Readiness({ r, onSelect, linkBase }: { r: ReadinessData;
     );
   };
   return (
-    <section className="card grid md:grid-cols-[1.1fr_1.3fr_1fr_0.9fr] divide-y md:divide-y-0 md:divide-x divide-line" aria-label="Readiness">
+    <section className="card grid md:grid-cols-[1fr_1.4fr_1fr] divide-y md:divide-y-0 md:divide-x divide-line" aria-label="Readiness" data-tour="readiness">
       <div className="p-4">
         <div className="label">Ready for the Oct 2 review?</div>
         <div className={`mt-1.5 flex items-center gap-2 text-[18px] font-semibold ${tone}`}>
@@ -56,7 +56,7 @@ export default function Readiness({ r, onSelect, linkBase }: { r: ReadinessData;
         </div>
       </div>
       <div className="p-4">
-        <div className="label">Source freshness</div>
+        <div className="label">Data last updated</div>
         <ul className="mt-2 flex flex-col gap-1 text-[12.5px]">
           {r.sources.map((s) => (
             <li key={s.name} className="flex items-center gap-2">
@@ -65,15 +65,6 @@ export default function Readiness({ r, onSelect, linkBase }: { r: ReadinessData;
               <span className="text-ink-3 ml-auto whitespace-nowrap">{s.state === "fresh" && s.at ? relTime(s.at) : "not shared"}</span>
             </li>
           ))}
-        </ul>
-      </div>
-      <div className="p-4">
-        <div className="label">Approvals</div>
-        <ul className="mt-2 flex flex-col gap-1 text-[12.5px] text-ink-2">
-          <li><b className="text-ink num">{r.approvals.applied}</b> applied by policy</li>
-          <li><b className="text-ink num">{r.approvals.awaiting}</b> waiting for you</li>
-          <li><b className="text-ink num">{r.approvals.approvedByYou}</b> approved by you</li>
-          <li><b className="text-ink num">{r.approvals.expertSigned}</b> reviewed by an accountant</li>
         </ul>
       </div>
     </section>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { currentOffset, withWs } from "@/lib/db";
 import { ToastProvider } from "@/components/Toast";
+import { TourProvider } from "@/components/tour/Tour";
 
 export const metadata: Metadata = {
   title: "Footnote for IES",
@@ -19,7 +20,9 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <script dangerouslySetInnerHTML={{ __html: `window.__fnOffset=${Number(offset)};` }} />
       </head>
       <body>
-        <ToastProvider>{children}</ToastProvider>
+        <ToastProvider>
+          <TourProvider>{children}</TourProvider>
+        </ToastProvider>
       </body>
     </html>
   );

@@ -32,7 +32,7 @@ const NAV: { label: string; href?: string; fn?: boolean }[] = [
   { label: "Lending & banking" },
 ];
 
-export default function Shell({ user, users, needsYou, children }: { user: ShellUser; users: ShellUser[]; needsYou: number; children: React.ReactNode }) {
+export default function Shell({ user, users, children }: { user: ShellUser; users: ShellUser[]; children: React.ReactNode }) {
   const path = usePathname();
   const router = useRouter();
   const toast = useToast();
@@ -66,7 +66,7 @@ export default function Shell({ user, users, needsYou, children }: { user: Shell
             <div className="text-[16px] text-intuit leading-tight mt-0.5">Enterprise Suite</div>
           </div>
           <div className="px-4">
-            <button onClick={() => outOfScope("Creating transactions")} className="w-full h-9 rounded-full border border-ink text-ink font-semibold text-sm flex items-center justify-center gap-1 bg-white hover:bg-canvas">
+            <button onClick={() => outOfScope("Creating transactions")} className="w-full h-9 rounded-full border border-[#c3c7d0] text-[#8b909c] font-semibold text-sm flex items-center justify-center gap-1 bg-white hover:bg-canvas">
               <Icon.Plus size={16} /> New
             </button>
           </div>
@@ -74,11 +74,15 @@ export default function Shell({ user, users, needsYou, children }: { user: Shell
           <nav className="flex-1 overflow-y-auto pb-4">
             {NAV.map((n) => {
               const active = !!n.href && path.startsWith(n.href);
-              const cls = `w-full flex items-center justify-between pl-5 pr-4 py-[7px] text-[14px] border-l-4 text-left ${active ? "border-ink bg-[#e2e4e9] font-semibold text-ink" : "border-transparent text-ink hover:bg-[#e8eaee]"}`;
+              // Only the close workspace and reports are part of the prototype. They keep full-strength
+              // text and a small dot; the rest of IES is shown softer.
+              const cls = `w-full flex items-center justify-between pl-5 pr-4 py-[7px] text-[14px] border-l-4 text-left ${
+                active ? "border-ink bg-[#e2e4e9] font-semibold text-ink" : n.href ? "border-transparent font-medium text-ink hover:bg-[#e8eaee]" : "border-transparent text-[#8b909c] hover:bg-[#eceef1]"
+              }`;
               const inner = (
                 <>
                   <span className="flex items-center gap-2">{n.fn ? <FootnoteLogo size={14} /> : null}{n.label}</span>
-                  {n.fn && needsYou > 0 ? <span className="text-[11px] font-bold bg-fn text-white rounded-full px-1.5 min-w-[18px] text-center">{needsYou}</span> : n.href ? null : <Icon.ChevronRight size={13} className="text-ink-3" />}
+                  {n.href ? <span className="w-1.5 h-1.5 rounded-full bg-fn/60" aria-hidden /> : null}
                 </>
               );
               return n.href ? (
@@ -88,6 +92,7 @@ export default function Shell({ user, users, needsYou, children }: { user: Shell
               );
             })}
           </nav>
+          <div className="px-5 pb-2 text-[11.5px] text-ink-3 flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-fn/60" aria-hidden /> Works in this prototype</div>
           <div className="px-5 py-3 border-t border-line text-[12px] text-ink-3">Powered by <span className="font-bold text-qb">quickbooks</span></div>
         </aside>
         <div className="flex-1 min-w-0 flex flex-col">
@@ -98,10 +103,6 @@ export default function Shell({ user, users, needsYou, children }: { user: Shell
               <span className="text-[12px] text-ink-3 hidden lg:inline">3 entities</span>
             </div>
             <div className="flex items-center gap-4 text-ink-2">
-              <Link href="/close" aria-label={`${needsYou} items need you`} className="relative hover:text-ink">
-                <Icon.Bell />
-                {needsYou > 0 ? <span className="absolute -top-1.5 -right-2 text-[10px] font-bold bg-fn text-white rounded-full px-1 min-w-[16px] text-center">{needsYou}</span> : null}
-              </Link>
               <button onClick={() => outOfScope("Help")} aria-label="Help" className="hover:text-ink"><Icon.Help /></button>
               <div className="relative" ref={mRef}>
                 <button onClick={() => setMeOpen((v) => !v)} aria-label="Profile and demo people" className="flex items-center gap-2">

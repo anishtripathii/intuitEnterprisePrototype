@@ -93,7 +93,12 @@ async function ensureWorkspace(ws: string) {
   const sql = pg();
   const schema = schemaOf(ws);
   if (!registryReady) {
-    await sql.unsafe("create table if not exists public.fn_workspaces(id text primary key, created_at timestamptz default now()); alter table public.fn_workspaces enable row level security;");
+    try {
+      await sql.unsafe("create table if not exists public.fn_workspaces(id text primary key, created_at timestamptz default now()); alter table public.fn_workspaces enable row level security;");
+    } catch (e) {
+      // Two first requests on an empty database can race to create it; the loser just uses it.
+      if (!["23505", "42P07"].includes((e as { code?: string }).code ?? "")) throw e;
+    }
     registryReady = true;
   }
   await sql.begin(async (tx) => {
@@ -133,9 +138,10 @@ export async function currentWorkspaceId(): Promise<string> {
 }
 
 // Run fn inside the visitor's workspace transaction. Nested calls reuse the outer transaction.
-export async function withWs<T>(fn: () => Promise<T>): Promise<T> {
+// `wsId` targets a workspace whose cookie was only just set in this request (the guided demo's fresh copy).
+export async function withWs<T>(fn: () => Promise<T>, wsId?: string): Promise<T> {
   if (als.getStore()) return fn();
-  const ws = await currentWorkspaceId();
+  const ws = wsId ?? (await currentWorkspaceId());
   for (let attempt = 0; ; attempt++) {
     await ensureWorkspace(ws);
     try {

@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { Avatar } from "@/components/ui";
 import { FootnoteLogo, Icon } from "@/components/icons";
-import { DEMO_STEPS } from "@/components/shell/DemoBar";
+import { useTour } from "@/components/tour/Tour";
+import { TRACKS } from "@/components/tour/steps";
 
 type U = { id: string; name: string; email: string; role: string; title: string; initials: string; color: string };
 
@@ -19,6 +20,7 @@ export default function LoginForm({ users }: { users: U[] }) {
   const [password, setPassword] = useState("demo1234");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const tour = useTour();
 
   async function signIn(e: React.FormEvent) {
     e.preventDefault();
@@ -88,16 +90,17 @@ export default function LoginForm({ users }: { users: U[] }) {
             ))}
           </div>
           <div className="card p-5">
-            <div className="label">The 12-minute walkthrough</div>
-            <ol className="mt-3 grid sm:grid-cols-2 gap-x-6 gap-y-2 text-[13.5px]">
-              {DEMO_STEPS.map((s, i) => (
-                <li key={i} className="flex gap-2.5">
-                  <span className="w-5 h-5 rounded-full bg-fn-soft text-fn text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
-                  <span><span className="font-medium">{s.title}</span> <span className="text-ink-3">· {s.who.split(" · ")[0]}</span></span>
-                </li>
+            <div className="flex items-center gap-2"><FootnoteLogo size={16} /><span className="text-[16px] font-semibold">New here? Watch Footnote help</span></div>
+            <p className="text-[13.5px] text-ink-2 mt-1">A short guided demo, one screen at a time. You can also start it later from “Footnote demo” in the top bar.</p>
+            <div className="grid sm:grid-cols-2 gap-3 mt-3">
+              {Object.values(TRACKS).map((t) => (
+                <button key={t.id} onClick={async () => { setBusy(true); await tour.start(t.id); setBusy(false); }} disabled={busy} className="text-left rounded-lg border border-line p-3 hover:border-fn hover:bg-fn-soft/40">
+                  <span className="block text-[14px] font-semibold">{t.person} · <span className="font-normal text-ink-2">{t.id === "controller" ? "finance leader" : "developer"}</span></span>
+                  <span className="block text-[12.5px] text-ink-2 mt-0.5">{t.pitch}</span>
+                  <span className="mt-2 flex items-center gap-1 text-[13px] font-semibold text-fn"><Icon.Play size={12} /> Start demo · {t.steps.length} steps</span>
+                </button>
               ))}
-            </ol>
-            <p className="text-[12.5px] text-ink-3 mt-3">Use “Demo guide” in the top bar on any screen to jump to the next step.</p>
+            </div>
           </div>
         </div>
       </div>

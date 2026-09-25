@@ -5,7 +5,7 @@ import { Drawer } from "@/components/Modal";
 import { Icon } from "@/components/icons";
 import { Chip, FnTag } from "@/components/ui";
 import { useAction } from "@/components/Toast";
-import { relTime } from "@/lib/format";
+import { money, relTime } from "@/lib/format";
 import type { CloseState } from "./shared";
 
 const LIMITED = ["confirmed_tag", "move_cost"];
@@ -13,7 +13,7 @@ const LIMITED = ["confirmed_tag", "move_cost"];
 export default function PoliciesDrawer({ state, onClose, reload }: { state: CloseState; onClose: () => void; reload: () => Promise<void> }) {
   const act = useAction();
   const [rows, setRows] = useState(state.policies.map((p) => ({ ...p })));
-  const [mat, setMat] = useState(String(state.readiness.materiality));
+  const mat = String(state.readiness.materiality);
   const [busy, setBusy] = useState(false);
 
   async function save() {
@@ -37,51 +37,28 @@ export default function PoliciesDrawer({ state, onClose, reload }: { state: Clos
       footer={<><button className="btn btn-secondary" onClick={onClose}>Cancel</button><button className="btn btn-primary" disabled={busy} onClick={save}>Save policies</button></>}
     >
       <div className="flex flex-col gap-6 text-[14px]">
-        <p className="text-ink-2">Each kind of action has a mode. Autonomous actions are listed on the issue with the policy that allowed them, and can be undone. An action earns more autonomy from audited accuracy, not from how often you click approve.</p>
-
-        <div>
-          <label htmlFor="mat" className="font-semibold block">Materiality limit</label>
-          <p className="text-[13px] text-ink-2 mb-1.5">Issues below this are still worked, but they don&apos;t block the review.</p>
-          <div className="flex items-center gap-1">$<input id="mat" type="number" min={0} step={500} value={mat} onChange={(e) => setMat(e.target.value)} className="w-32" /></div>
-        </div>
+        <p className="text-ink-2">Choose what Footnote may do on its own. Everything it does is listed on the issue and can be undone. Problems under {money(Number(mat), { cents: false })} are still worked, but they don&apos;t hold up the review.</p>
 
         <ul className="flex flex-col divide-y divide-line border border-line rounded-xl">
           {rows.map((p, idx) => (
-            <li key={p.key} className="p-4 flex flex-col gap-2">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="font-semibold">{p.label}</div>
-                  <div className="text-[13px] text-ink-2">{p.detail}</div>
-                </div>
-                {p.editable ? (
-                  <select
-                    aria-label={`Mode for ${p.label}`}
-                    value={p.mode}
-                    onChange={(e) => setRows((r) => r.map((x, i) => (i === idx ? { ...x, mode: e.target.value as typeof x.mode } : x)))}
-                    className="shrink-0"
-                  >
-                    <option value="auto">Autonomous</option>
-                    <option value="approval">Needs my approval</option>
-                  </select>
-                ) : (
-                  <Chip tone={p.mode === "expert" ? "expert" : "good"} className="shrink-0"><Icon.Lock size={11} /> {p.mode === "expert" ? "Accountant, then you" : "Autonomous"}</Chip>
-                )}
+            <li key={p.key} className="p-4 flex items-start justify-between gap-3">
+              <div>
+                <div className="font-semibold">{p.label}</div>
+                <div className="text-[13px] text-ink-2">{p.detail}{LIMITED.includes(p.key) && p.mode === "auto" && p.limit_amount != null ? ` Up to ${money(p.limit_amount, { cents: false })}.` : ""}</div>
               </div>
-              {LIMITED.includes(p.key) && p.mode === "auto" ? (
-                <label className="flex items-center gap-2 text-[13px] text-ink-2">
-                  Only up to $
-                  <input
-                    type="number"
-                    min={0}
-                    step={500}
-                    value={p.limit_amount ?? ""}
-                    placeholder="no limit"
-                    onChange={(e) => setRows((r) => r.map((x, i) => (i === idx ? { ...x, limit_amount: e.target.value === "" ? null : Number(e.target.value) } : x)))}
-                    className="w-28 !py-1"
-                  />
-                  <span>per item</span>
-                </label>
-              ) : null}
+              {p.editable ? (
+                <select
+                  aria-label={`Mode for ${p.label}`}
+                  value={p.mode}
+                  onChange={(e) => setRows((r) => r.map((x, i) => (i === idx ? { ...x, mode: e.target.value as typeof x.mode } : x)))}
+                  className="shrink-0"
+                >
+                  <option value="auto">On its own</option>
+                  <option value="approval">Ask me first</option>
+                </select>
+              ) : (
+                <Chip tone={p.mode === "expert" ? "expert" : "good"} className="shrink-0"><Icon.Lock size={11} /> {p.mode === "expert" ? "Accountant, then you" : "On its own"}</Chip>
+              )}
             </li>
           ))}
         </ul>

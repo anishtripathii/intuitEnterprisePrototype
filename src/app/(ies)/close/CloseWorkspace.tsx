@@ -19,12 +19,6 @@ const GROUPS: { key: string; label: string }[] = [
   { key: "small", label: "Won't block the review" },
 ];
 
-const ENTITIES = [
-  { id: "hpb", name: "Harbor & Pine Builders", note: "4 active projects" },
-  { id: "prs", name: "Pine Ridge Services", note: "No projects" },
-  { id: "hpg", name: "Harbor & Pine Group", note: "Parent" },
-];
-
 export default function CloseWorkspace({ initialIssue }: { initialIssue: string | null }) {
   const { data, reload } = usePoll<CloseState>("/api/close", 2500);
   const act = useAction();
@@ -32,7 +26,6 @@ export default function CloseWorkspace({ initialIssue }: { initialIssue: string 
   const [policiesOpen, setPoliciesOpen] = useState(false);
   const [animateLog, setAnimateLog] = useState(false);
   const [goal, setGoal] = useState("Prepare September's project-cost review for the leadership review on Oct 2. Make sure every project's margin is complete and correct.");
-  const [entities, setEntities] = useState<string[]>(["hpb"]);
   const [starting, setStarting] = useState(false);
   const endAnimation = useCallback(() => setAnimateLog(false), []);
 
@@ -50,7 +43,7 @@ export default function CloseWorkspace({ initialIssue }: { initialIssue: string 
 
   async function start() {
     setStarting(true);
-    const r = await act("/api/close/start", { goal, entities }, { quiet: true });
+    const r = await act("/api/close/start", { goal, entities: ["hpb"] }, { quiet: true });
     if (r.ok) {
       setAnimateLog(true);
       setSelected("log");
@@ -86,29 +79,16 @@ export default function CloseWorkspace({ initialIssue }: { initialIssue: string 
 
       {!data.run ? (
         <section className="card mt-5 p-6 lg:p-8 grid lg:grid-cols-[1.4fr_1fr] gap-8 fn-in">
-          <div>
+          <div data-tour="start-review">
             <div className="flex items-center gap-2"><FootnoteLogo size={18} /><h2 className="text-[20px] font-semibold">What should Footnote work on?</h2></div>
             <label htmlFor="goal" className="block text-[13px] font-semibold mt-5 mb-1.5">Goal</label>
             <textarea id="goal" rows={3} value={goal} onChange={(e) => setGoal(e.target.value)} className="w-full text-[15px] leading-relaxed" />
-            <fieldset className="mt-4">
-              <legend className="text-[13px] font-semibold mb-1.5">Entities</legend>
-              <div className="flex flex-wrap gap-2">
-                {ENTITIES.map((e) => {
-                  const on = entities.includes(e.id);
-                  return (
-                    <label key={e.id} className={`flex items-center gap-2 rounded-lg border px-3 py-2 cursor-pointer text-[13.5px] ${on ? "border-fn bg-fn-soft" : "border-line hover:border-ink-3"}`}>
-                      <input type="checkbox" checked={on} onChange={() => setEntities((v) => (on ? v.filter((x) => x !== e.id) : [...v, e.id]))} />
-                      <span><span className="font-semibold">{e.name}</span> <span className="text-ink-3">· {e.note}</span></span>
-                    </label>
-                  );
-                })}
-              </div>
-            </fieldset>
+            <p className="text-[13px] text-ink-2 mt-2">For <span className="font-semibold text-ink">Harbor &amp; Pine Builders</span> · 4 active projects</p>
             <div className="mt-6 flex items-center gap-3">
-              <button className="btn btn-fn h-10 px-5 text-[15px]" onClick={start} disabled={starting || !goal.trim() || !entities.length}>
+              <button className="btn btn-fn h-10 px-5 text-[15px]" onClick={start} disabled={starting || !goal.trim()} data-tour="start-button">
                 {starting ? <><Spinner size={15} /> Starting…</> : <><Icon.Play size={15} /> Start review</>}
               </button>
-              <span className="text-[12.5px] text-ink-3">Takes a few seconds. You can change what Footnote may do in Policies.</span>
+              <span className="text-[12.5px] text-ink-3">Takes a few seconds.</span>
             </div>
           </div>
           <div className="rounded-xl bg-canvas p-5">
@@ -151,7 +131,7 @@ export default function CloseWorkspace({ initialIssue }: { initialIssue: string 
                     const s = statusInfo(i.status, issueCtx(i));
                     const on = selected === i.id;
                     return (
-                      <button key={i.id} onClick={() => select(i.id)} className={`w-full text-left px-4 py-2.5 flex gap-3 border-l-[3px] ${on ? "bg-fn-soft border-fn" : "border-transparent hover:bg-canvas"}`}>
+                      <button key={i.id} onClick={() => select(i.id)} data-issue-id={i.id} aria-current={on ? "true" : undefined} className={`w-full text-left px-4 py-2.5 flex gap-3 border-l-[3px] ${on ? "bg-fn-soft border-fn" : "border-transparent hover:bg-canvas"}`}>
                         <span className={`w-2 h-2 rounded-full mt-[7px] shrink-0 ${i.material ? (g.key === "done" ? "bg-qb" : "bg-warn") : "bg-line"}`} title={i.material ? "Material" : "Not material"} />
                         <span className="min-w-0 flex-1">
                           <span className={`block text-[13.5px] leading-snug ${g.key === "done" ? "text-ink-2" : "font-semibold text-ink"}`}>{i.title}</span>
@@ -209,7 +189,7 @@ function Investigation({ steps, goal, animate, onDone, onNext, youCount }: { ste
   const running = shown < steps.length;
 
   return (
-    <section className="card">
+    <section className="card" data-tour={running ? undefined : "investigation"}>
       <div className="px-6 pt-5 pb-4 border-b border-line">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-[19px] font-semibold flex items-center gap-2">Footnote&apos;s investigation {running ? <span className="text-fn"><Spinner size={15} /></span> : null}</h2>

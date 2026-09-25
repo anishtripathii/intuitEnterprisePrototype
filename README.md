@@ -10,7 +10,9 @@ A working prototype for the Intuit PM case, built inside an Intuit Enterprise Su
 
 **Live:** https://intuit-enterprise-prototype.vercel.app
 
-All demo accounts use the password `demo1234`, and the sign-in page has one-click people. **Demo guide** (top bar, every screen) jumps to each step and can reset the data. Every visitor gets their own private copy of the demo, so reviewers never see each other's progress.
+All demo accounts use the password `demo1234`, and the sign-in page has one-click people. **Footnote demo** (top bar, every screen, and on the sign-in page) starts a guided walkthrough for either primary user: a callout appears next to what's happening, in plain words, with **Next** and **Cancel**. Each demo starts from a fresh copy of the data. Every visitor gets their own private copy, so reviewers never see each other's progress.
+
+In the IES menu, only **Close workspace** and **Reports** are part of the prototype; they're shown at full strength with a small dot, and the rest of IES is shown softer.
 
 ## Run it locally
 
@@ -30,16 +32,17 @@ npm run dev                      # http://localhost:3100
 
 Deploy a new version with `npx vercel deploy --prod`.
 
-## The 12-minute story
+## The guided demos
 
-| Minutes | Who | What happens |
-| --- | --- | --- |
-| 0–2 | Priya | Starts the September project-cost review; the investigation runs; 7 receipts are attached by policy |
-| 2–4 | Luis (phone) | Answers “which job?” for Home Depot $8,400; the tag is applied under the $10,000 policy |
-| 4–6 | Ravi | Builds SiteLog CostCheck; the Proving Ground fails 2 missing-data cases; he turns on abstention; 24/24; review; publish |
-| 6–8 | Priya | Installs CostCheck (Builders only, suggest-only); approves its $38,400 labor reclass |
-| 8–10 | Priya → Elena → Maya | Lincoln goes to Elena; she asks Maya to confirm the estimate, then changes the treatment to cost-to-cost |
-| 10–12 | Priya | Approves Elena's recommendation; the margins report shows before, after, why, and what's still open |
+| Priya, controller (11 steps) | Ravi, developer (7 steps) |
+| --- | --- |
+| Gives Footnote one goal; it checks the books and connected apps and attaches 7 receipts on its own | Finds 1,241 open "labor doesn't match the site" issues on the demand board |
+| The $8,400 Home Depot purchase has no job, so Luis gets one text; his answer applies under the $10,000 rule | Builds SiteLog CostCheck from a template: what it reads, its price |
+| Labor lives in SiteLog, so CostCheck is recommended; she installs it and approves its $38,400 fix | The Proving Ground fails 2 of 24 cases; he turns on "skip unapproved timesheets" and passes |
+| The revenue judgment call goes to Elena, her accountant, who sees only that case and recommends cost-to-cost | Publishes after Intuit's security review |
+| Priya approves; readiness says "Yes, ready"; the report shows each margin before, after and why | Priya installs it from her labor issue and approves its fix; Ravi earns $4.80 of the $6 |
+
+Steps are defined in `src/components/tour/steps.ts`; each points at an element marked `data-tour="…"`. `/api/demo/tour` sets up the fresh copy and plays Luis and Elena when they aren't on screen.
 
 Expected result: Oak Ave 40.7% → 27.9%, Elm St 9.7% → 19.1%, Lincoln 39.5% → 24.7%, Riverside unchanged, company direct labor unchanged at $285,000.
 

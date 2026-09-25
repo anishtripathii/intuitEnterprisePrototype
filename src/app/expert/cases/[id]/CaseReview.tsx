@@ -142,7 +142,7 @@ export default function CaseReview({ id }: { id: string }) {
                 </button>
               </section>
 
-              <section className="card p-5">
+              <section className="card p-5" data-tour="case-decision">
                 <h2 className="text-[16px] font-semibold">Your recommendation</h2>
                 <p className="text-[13px] text-ink-2 mt-1">Agree with the draft or change it. Priya approves and posts; you don&apos;t post anything.</p>
                 <fieldset className="flex flex-col gap-2 mt-3">

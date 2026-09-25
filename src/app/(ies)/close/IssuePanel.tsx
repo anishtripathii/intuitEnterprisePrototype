@@ -60,7 +60,7 @@ export default function IssuePanel({ issue: i, state, reload }: { issue: IssueVi
   const firstName = i.question?.askedFirst ?? "";
 
   return (
-    <article className="card fn-in">
+    <article className="card fn-in" data-issue={i.id}>
       <header className="px-6 pt-5 pb-4 border-b border-line">
         <div className="flex flex-wrap items-center gap-2">
           <ModeChip mode={i.mode} />
@@ -81,7 +81,7 @@ export default function IssuePanel({ issue: i, state, reload }: { issue: IssueVi
       </header>
 
       {/* The one thing to do next */}
-      <section className="px-6 py-5 border-b border-line bg-[#fafbfd]">
+      <section className="px-6 py-5 border-b border-line bg-[#fafbfd]" data-tour="issue-action">
         {i.status === "waiting_person" && i.question ? (
           <div className="flex flex-col gap-3">
             <div className="flex items-start gap-3">
@@ -92,18 +92,9 @@ export default function IssuePanel({ issue: i, state, reload }: { issue: IssueVi
                 <blockquote className="mt-2 rounded-lg bg-white border border-line px-3 py-2 text-[14px]">“{i.question.prompt}”</blockquote>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <Link href={`/phone/${i.question.asked_user_id}`} className="btn btn-fn"><Icon.Phone size={16} /> Open {firstName}&apos;s phone (demo)</Link>
-              <button className="btn btn-secondary" disabled={!!busy} onClick={() => run("remind")}>{busy === "remind" ? <Spinner size={14} /> : <Icon.Bell size={15} />} Send a reminder</button>
+            <div>
+              <Link href={`/phone/${i.question.asked_user_id}`} className="btn btn-fn"><Icon.Phone size={16} /> See {firstName}&apos;s phone</Link>
             </div>
-            <details className="text-[13px]">
-              <summary className="cursor-pointer text-link">Know the answer? Answer it yourself</summary>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {i.question.options.choices.map((c) => (
-                  <button key={c.value} className="btn btn-secondary btn-sm" disabled={!!busy} onClick={() => run("answer", { value: c.value, label: c.label })}>{c.label}</button>
-                ))}
-              </div>
-            </details>
           </div>
         ) : null}
 
@@ -123,7 +114,7 @@ export default function IssuePanel({ issue: i, state, reload }: { issue: IssueVi
                   </div>
                   {i.recommendation.installed ? <p className="text-[13px] text-bad mt-2">Installed, but not for Harbor &amp; Pine Builders. Change its access to run it here.</p> : null}
                 </div>
-                <button className="btn btn-fn" onClick={() => setInstall(true)}>{i.recommendation.installed ? "Change access" : "Install for this issue"}</button>
+                <button className="btn btn-fn" onClick={() => setInstall(true)} data-tour="install-open">{i.recommendation.installed ? "Change access" : "Install for this issue"}</button>
               </div>
             </div>
           ) : (
@@ -146,13 +137,13 @@ export default function IssuePanel({ issue: i, state, reload }: { issue: IssueVi
               <div className="text-[15px] font-semibold">{p.label}</div>
               <p className="text-[13.5px] text-ink-2 mt-1">{p.rationale}</p>
             </div>
-            <p className="text-[13px] text-ink-2">Your policy sends revenue treatment to an accountant. They recommend; you approve and post.</p>
-            <div><button className="btn btn-fn" onClick={() => setExpert(true)}><Icon.Expert size={16} /> Send to an accountant</button></div>
+            <p className="text-[13px] text-ink-2">Deciding when to count revenue is a judgment call, so your policy sends it to an accountant. They recommend; you approve and post.</p>
+            <div><button className="btn btn-fn" onClick={() => setExpert(true)} data-tour="expert-open"><Icon.Expert size={16} /> Send to an accountant</button></div>
           </div>
         ) : null}
 
         {i.status === "with_expert" && i.case ? (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3" data-tour="with-expert">
             <div className="flex items-center gap-3">
               <span className="w-9 h-9 rounded-full bg-expert-soft text-expert flex items-center justify-center"><Icon.Expert size={18} /></span>
               <div>
@@ -200,6 +191,7 @@ export default function IssuePanel({ issue: i, state, reload }: { issue: IssueVi
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   className="btn btn-primary"
+                  data-tour="approve"
                   disabled={!!busy || (p?.type === "tag" && !tagProject)}
                   onClick={() => run("approve", p?.type === "tag" ? { projectId: tagProject } : undefined)}
                 >
@@ -214,7 +206,7 @@ export default function IssuePanel({ issue: i, state, reload }: { issue: IssueVi
         ) : null}
 
         {["auto_resolved", "resolved", "dismissed"].includes(i.status) ? (
-          <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex flex-wrap items-start justify-between gap-3" data-tour="resolved">
             <div>
               <div className="flex items-center gap-2 text-[15px] font-semibold text-good"><Icon.Check size={18} /> {i.resolution ?? "Resolved"}</div>
               {i.status === "auto_resolved" ? <p className="text-[13px] text-ink-2 mt-1">{MODE.auto.hint}</p> : null}
@@ -295,7 +287,7 @@ function ProposalBlock({ p, i, state, tagProject, setTagProject }: { p: Proposal
     const weeks = [...new Set(i.timesheets.map((t) => t.week_start))];
     const workers = [...new Set(i.timesheets.map((t) => t.worker))];
     return (
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3" data-tour="proposal">
         <div className="flex items-center gap-2">
           <span className="w-7 h-7 rounded-md bg-[#2563EB] text-white text-[10px] font-bold flex items-center justify-center">SL</span>
           <span className="text-[15px] font-semibold">{p.agentName} proposes moving {money(p.total, { cents: false })} of labor</span>
@@ -369,16 +361,10 @@ function RecommendationBlock({ i, state }: { i: IssueView; state: CloseState }) 
 function InstallModal({ i, onClose, reload }: { i: IssueView; onClose: () => void; reload: () => Promise<void> }) {
   const act = useAction();
   const rec = i.recommendation!;
-  const [entities, setEntities] = useState<string[]>(["hpb"]);
   const [busy, setBusy] = useState(false);
-  const E = [
-    { id: "hpb", name: "Harbor & Pine Builders", note: "Where the labor issue is" },
-    { id: "prs", name: "Pine Ridge Services", note: "" },
-    { id: "hpg", name: "Harbor & Pine Group", note: "Parent" },
-  ];
   async function go() {
     setBusy(true);
-    const r = await act(`/api/issues/${i.id}/install`, { agentId: rec.id, entities });
+    const r = await act(`/api/issues/${i.id}/install`, { agentId: rec.id, entities: ["hpb"] });
     await reload();
     setBusy(false);
     if (r.ok) onClose();
@@ -388,35 +374,18 @@ function InstallModal({ i, onClose, reload }: { i: IssueView; onClose: () => voi
       title={`Install ${rec.name}`}
       eyebrow={<span className="text-[12px] text-ink-3">IES App Store · by {rec.vendor}</span>}
       onClose={onClose}
-      width={600}
-      footer={<><button className="btn btn-secondary" onClick={onClose}>Cancel</button><button className="btn btn-fn" disabled={busy || !entities.length} onClick={go}>{busy ? <><Spinner size={14} /> Installing and running…</> : "Install and run on this issue"}</button></>}
+      width={560}
+      footer={<><button className="btn btn-secondary" onClick={onClose}>Cancel</button><button className="btn btn-fn" disabled={busy} onClick={go} data-tour="install-confirm">{busy ? <><Spinner size={14} /> Installing and running…</> : "Install and run on this issue"}</button></>}
     >
       <div className="flex flex-col gap-5 text-[14px]">
         <p className="text-ink-2">{rec.summary}</p>
         <div className="flex flex-wrap gap-1.5">
-          <Chip tone="good"><Icon.Check size={11} /> Proving Ground {rec.passed}/{rec.total}</Chip>
+          <Chip tone="good"><Icon.Check size={11} /> Passed {rec.passed}/{rec.total} test cases</Chip>
           <Chip tone="good"><Icon.Shield size={11} /> Intuit security review</Chip>
         </div>
-        <fieldset>
-          <legend className="font-semibold mb-2">Which entities can it see?</legend>
-          <div className="flex flex-col gap-2">
-            {E.map((e) => {
-              const on = entities.includes(e.id);
-              return (
-                <label key={e.id} className="flex items-center gap-2.5 cursor-pointer">
-                  <input type="checkbox" checked={on} onChange={() => setEntities((v) => (on ? v.filter((x) => x !== e.id) : [...v, e.id]))} />
-                  <span>{e.name}{e.note ? <span className="text-ink-3"> · {e.note}</span> : null}</span>
-                </label>
-              );
-            })}
-          </div>
-        </fieldset>
-        <div>
-          <div className="font-semibold mb-2">What it can do</div>
-          <div className="rounded-lg border border-line divide-y divide-line">
-            <label className="flex gap-2.5 p-3 bg-fn-soft/60"><input type="radio" checked readOnly /><span><span className="font-semibold">Suggest only</span><span className="block text-[13px] text-ink-2">It proposes corrections with evidence. You approve; IES posts.</span></span></label>
-            <label className="flex gap-2.5 p-3 text-ink-3"><input type="radio" disabled /><span><span className="font-semibold">Act within your policies</span><span className="block text-[13px]">Not available to partner agents yet.</span></span></label>
-          </div>
+        <div className="rounded-lg border border-line p-4 flex flex-col gap-1.5">
+          <div className="font-semibold">It can only suggest changes</div>
+          <p className="text-[13px] text-ink-2">It sees Harbor &amp; Pine Builders only. You approve every change, and IES posts it. Remove it any time in Policies.</p>
         </div>
         <div>
           <div className="font-semibold mb-1.5">Data it will read</div>
@@ -425,7 +394,7 @@ function InstallModal({ i, onClose, reload }: { i: IssueView; onClose: () => voi
           </ul>
         </div>
         <div className="rounded-lg bg-canvas px-4 py-3 text-[13px] text-ink-2">
-          <b className="text-ink">{money(rec.price)} per accepted correction</b>, billed on your Intuit invoice. Nothing is charged for proposals you reject. You can remove access in Policies at any time.
+          <b className="text-ink">{money(rec.price)} per accepted correction</b>, on your Intuit invoice. Suggestions you reject cost nothing.
         </div>
       </div>
     </Modal>
@@ -435,7 +404,7 @@ function InstallModal({ i, onClose, reload }: { i: IssueView; onClose: () => voi
 function ExpertModal({ i, state, onClose, reload }: { i: IssueView; state: CloseState; onClose: () => void; reload: () => Promise<void> }) {
   const act = useAction();
   const [who, setWho] = useState(state.experts.find((e) => e.own)?.id ?? state.experts[0]?.id ?? "");
-  const [question, setQuestion] = useState("This is Builders' first milestone-billing contract. Should we recognize the $220,000 as billed, or measure progress by cost incurred? Please give the entry you'd make.");
+  const question = "This is Builders' first milestone-billing contract. Should we recognize the $220,000 as billed, or measure progress by cost incurred? Please give the entry you'd make.";
   const [busy, setBusy] = useState(false);
   async function send() {
     setBusy(true);
@@ -450,7 +419,7 @@ function ExpertModal({ i, state, onClose, reload }: { i: IssueView; state: Close
       eyebrow={<Chip tone="expert" dot>Expert-led</Chip>}
       onClose={onClose}
       width={620}
-      footer={<><button className="btn btn-secondary" onClick={onClose}>Cancel</button><button className="btn btn-fn" disabled={busy || !question.trim() || !who} onClick={send}>{busy ? <><Spinner size={14} /> Preparing the case…</> : "Send case"}</button></>}
+      footer={<><button className="btn btn-secondary" onClick={onClose}>Cancel</button><button className="btn btn-fn" disabled={busy || !who} onClick={send} data-tour="expert-send">{busy ? <><Spinner size={14} /> Preparing the case…</> : "Send case"}</button></>}
     >
       <div className="flex flex-col gap-5 text-[14px]">
         <fieldset className="flex flex-col gap-2">
@@ -466,8 +435,8 @@ function ExpertModal({ i, state, onClose, reload }: { i: IssueView; state: Close
           ))}
         </fieldset>
         <div>
-          <label htmlFor="q" className="font-semibold block mb-1.5">Your question</label>
-          <textarea id="q" rows={3} value={question} onChange={(e) => setQuestion(e.target.value)} className="w-full" />
+          <div className="font-semibold mb-1.5">The question Footnote wrote</div>
+          <blockquote className="rounded-lg bg-canvas px-4 py-3 text-[14px]">“{question}”</blockquote>
         </div>
         <div>
           <div className="font-semibold mb-1.5">What they&apos;ll see</div>
