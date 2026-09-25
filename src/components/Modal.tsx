@@ -18,7 +18,7 @@ export function Modal({ title, eyebrow, onClose, children, footer, width = 560 }
   return createPortal(
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={title}>
       <div className="absolute inset-0 bg-[#141824]/45" onClick={onClose} />
-      <div className="relative bg-white rounded-xl shadow-2xl w-full max-h-[90vh] flex flex-col fn-in" style={{ maxWidth: width }}>
+      <div className="relative bg-white rounded-xl shadow-2xl w-full max-h-[90vh] flex flex-col fn-in" style={{ maxWidth: width }} data-modal-panel>
         <div className="flex items-start justify-between gap-4 px-6 pt-5 pb-4 border-b border-line">
           <div>
             {eyebrow ? <div className="mb-1">{eyebrow}</div> : null}
@@ -39,7 +39,7 @@ export function Drawer({ title, eyebrow, onClose, children, footer, width = 560 
   return createPortal(
     <div className="fixed inset-0 z-[60]" role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-[#141824]/30" onClick={onClose} />
-      <aside className="absolute top-0 right-0 bottom-0 bg-white shadow-2xl flex flex-col fn-slide w-full" style={{ maxWidth: width }}>
+      <aside className="absolute top-0 right-0 bottom-0 bg-white shadow-2xl flex flex-col fn-slide w-full" style={{ maxWidth: width }} data-modal-panel>
         <div className="flex items-start justify-between gap-4 px-6 pt-5 pb-4 border-b border-line">
           <div className="min-w-0">
             {eyebrow ? <div className="mb-1">{eyebrow}</div> : null}

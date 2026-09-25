@@ -75,6 +75,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);
   const [rect, setRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
   const navigated = useRef<string | null>(null);
 
   useEffect(() => setActive(readActive()), []);
@@ -148,6 +149,16 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     };
   }, [ready, step]);
 
+  // When the viewer opens one of the app's own windows (say, "Send to an accountant"), the demo steps
+  // aside instead of drawing over it, and comes back when the window closes.
+  useEffect(() => {
+    if (!active) return setModalOpen(false);
+    const check = () => setModalOpen(!!document.querySelector("[data-modal-panel]"));
+    check();
+    const id = setInterval(check, 200);
+    return () => clearInterval(id);
+  }, [active]);
+
   const stop = useCallback(() => {
     writeActive(null);
     setActive(null);
@@ -212,8 +223,17 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
       {children}
       {chooser ? <Chooser onClose={() => setChooser(false)} onStart={start} starting={starting} /> : null}
       {active && step ? (
-        ready ? (
-          <Callout step={step} rect={rect} index={active.step} total={total} person={TRACKS[active.track].person} busy={busy} onNext={next} onCancel={stop} />
+        ready && modalOpen && !busy ? (
+          <div className="fixed bottom-4 left-4 z-[95] w-[440px] max-w-[calc(100vw-32px)] rounded-xl bg-white shadow-2xl border border-line p-3 pl-4 flex items-center gap-3 fn-in" role="dialog" aria-label="Footnote demo, paused">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 text-[12px] font-semibold text-fn"><FootnoteLogo size={12} /> Footnote demo · {active.step + 1} of {total}</div>
+              <div className="text-[13px] text-ink-2 leading-snug mt-0.5">Paused while this window is open. Finish it yourself, or click Next.</div>
+            </div>
+            <button className="btn btn-secondary btn-sm" onClick={stop}>Cancel</button>
+            <button className="btn btn-fn btn-sm" onClick={next}>Next <Icon.Arrow size={13} /></button>
+          </div>
+        ) : ready ? (
+          <Callout step={step} rect={modalOpen ? null : rect} index={active.step} total={total} person={TRACKS[active.track].person} busy={busy} onNext={next} onCancel={stop} />
         ) : (
           <div className="fixed bottom-5 right-5 z-[95] w-[320px] rounded-xl bg-white shadow-2xl border border-line p-4 flex items-center gap-3 fn-in" role="status">
             <Spinner size={16} />
@@ -246,7 +266,17 @@ function Callout({ step, rect, index, total, person, busy, onNext, onCancel }: {
     else if (r.right + gap + size.w <= vw - pad) pos = { left: r.right + gap, top: clamp(r.top, pad, vh - size.h - pad) };
     else if (r.left - gap - size.w >= pad) pos = { left: r.left - gap - size.w, top: clamp(r.top, pad, vh - size.h - pad) };
     else if (r.top - gap - size.h >= pad) pos = { left: clamp(r.left, pad, vw - size.w - pad), top: r.top - gap - size.h };
-    else pos = { left: clamp(r.left + r.width - size.w - gap, pad, vw - size.w - pad), top: vh - size.h - 20 };
+    else {
+      const covered = (p: { left: number; top: number }) =>
+        Math.max(0, Math.min(p.left + size.w, r.right) - Math.max(p.left, r.left)) * Math.max(0, Math.min(p.top + size.h, r.bottom) - Math.max(p.top, r.top));
+      const corners = [
+        { left: vw - size.w - 20, top: vh - size.h - 20 },
+        { left: 20, top: vh - size.h - 20 },
+        { left: vw - size.w - 20, top: 20 },
+        { left: 20, top: 20 },
+      ];
+      pos = corners.reduce((best, c) => (covered(c) < covered(best) ? c : best));
+    }
   }
   const last = index === total - 1;
 
